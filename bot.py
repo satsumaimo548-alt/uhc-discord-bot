@@ -3,14 +3,23 @@ from discord.ext import commands, tasks
 import requests
 import os
 
-DISCORD_TOKEN = os.environ["MTQ1NTU2NjgwMDgwNzc4ODcxNg.GM5hYp.ykYQyxlu8jL-PKd566eCBzVs-Sdlwc1lVblFs4"]
-HYPIXEL_API_KEY = os.environ["7707e887-13db-434b-8c60-d586eedddf53"]
+# ======================
+# 環境変数（超重要）
+# ======================
+
+DISCORD_TOKEN = os.environ["DISCORD_TOKEN"]
+HYPIXEL_API_KEY = os.environ["HYPIXEL_API_KEY"]
+
+# ======================
+# 設定
+# ======================
 
 GUILD_ID = 1401111226133516299
+
 SOLO_CHANNEL_ID = 1455567694706376705
 TEAM_CHANNEL_ID = 1455567665585455197
 
-UPDATE_SECONDS = 60
+UPDATE_SECONDS = 60  # 本番推奨：60以上
 
 # ======================
 # Bot設定
@@ -97,4 +106,4 @@ async def on_ready():
 # 実行
 # ======================
 
-bot.run("MTQ1NTU2NjgwMDgwNzc4ODcxNg.GM5hYp.ykYQyxlu8jL-PKd566eCBzVs-Sdlwc1lVblFs4")
+bot.run(DISCORD_TOKEN)
