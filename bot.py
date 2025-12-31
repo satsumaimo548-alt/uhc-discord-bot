@@ -2,9 +2,10 @@ import discord
 from discord.ext import commands, tasks
 import requests
 import os
+import asyncio
 
 # ======================
-# 環境変数（超重要）
+# 環境変数
 # ======================
 
 DISCORD_TOKEN = os.environ["DISCORD_TOKEN"]
@@ -15,17 +16,18 @@ HYPIXEL_API_KEY = os.environ["HYPIXEL_API_KEY"]
 # ======================
 
 GUILD_ID = 1401111226133516299
-
 SOLO_CHANNEL_ID = 1455567694706376705
 TEAM_CHANNEL_ID = 1455567665585455197
 
-UPDATE_SECONDS = 120  # 本番推奨：60以上
+UPDATE_SECONDS = 360  # 6分（安全）
 
 # ======================
-# Bot設定
+# Bot設定（重要）
 # ======================
 
 intents = discord.Intents.default()
+intents.guilds = True
+
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # ======================
@@ -34,9 +36,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 def get_uhc_counts():
     url = "https://api.hypixel.net/v2/counts"
-    headers = {
-        "API-Key": HYPIXEL_API_KEY
-    }
+    headers = {"API-Key": HYPIXEL_API_KEY}
 
     r = requests.get(url, headers=headers, timeout=10)
     data = r.json()
@@ -45,14 +45,11 @@ def get_uhc_counts():
         print("Hypixel API Error:", data)
         return 0, 0
 
-    games = data.get("games", {})
-    uhc = games.get("UHC", {})
-    modes = uhc.get("modes", {})
+    modes = data["games"]["UHC"]["modes"]
 
     solo = modes.get("SOLO", 0)
     teams = modes.get("TEAMS", 0)
 
-    # int / dict 両対応
     if isinstance(solo, dict):
         solo = solo.get("players", 0)
     if isinstance(teams, dict):
@@ -78,14 +75,14 @@ async def update_channels():
         team_ch = guild.get_channel(TEAM_CHANNEL_ID)
 
         if solo_ch:
-            new_name = f"🧍 UHC Solo｜{solo}"
-            if solo_ch.name != new_name:
-                await solo_ch.edit(name=new_name)
+            name = f"🧍 UHC Solo｜{solo}"
+            if solo_ch.name != name:
+                await solo_ch.edit(name=name)
 
         if team_ch:
-            new_name = f"👥 UHC Teams｜{teams}"
-            if team_ch.name != new_name:
-                await team_ch.edit(name=new_name)
+            name = f"👥 UHC Teams｜{teams}"
+            if team_ch.name != name:
+                await team_ch.edit(name=name)
 
         print(f"更新完了｜Solo {solo}｜Teams {teams}")
 
@@ -103,7 +100,21 @@ async def on_ready():
         update_channels.start()
 
 # ======================
-# 実行
+# 安全起動（429対策）
 # ======================
 
-bot.run(DISCORD_TOKEN)
+async def main():
+    while True:
+        try:
+            await bot.start(DISCORD_TOKEN)
+        except discord.HTTPException as e:
+            if e.status == 429:
+                print("429 Rate Limit → 60秒待機")
+                await asyncio.sleep(60)
+            else:
+                raise
+        except Exception as e:
+            print("致命的エラー:", e)
+            await asyncio.sleep(30)
+
+asyncio.run(main())
